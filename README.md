@@ -55,6 +55,7 @@ flowchart credits: Xin Liu, Josh Fromm, Shwetak Patel, Daniel McDuff, “Multi-T
 
 **Key Result:**
 Through rigorous finetuning and validation, we achieved a **30% improvement in accuracy**, reducing the **Mean Absolute Error to just 4.79 BPM** on unseen data.
+<img width="1536" height="1024" alt="bargraph" src="https://github.com/user-attachments/assets/6e5bd0df-97d2-44a5-9f24-708ed881346f" />
 
 ### 🔬 Our Finetuning Method
 
