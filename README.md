@@ -1,4 +1,4 @@
-# 💓 BeatSync: AI-Powered Contactless Vital Sign Monitoring
+# 💓 BeatSync: AI-Powered Contactless Vital Sign Monitoring & Health Assistant
 
 An innovative web application that leverages state-of-the-art deep learning to measure **heart rate** and **respiration rate** in real time using just a standard webcam.
 
@@ -88,3 +88,79 @@ Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+## 🧠 Intelligent RAG Chatbot Integration
+
+BeatSync now includes an integrated **Retrieval-Augmented Generation (RAG) chatbot**, designed to serve as a virtual health assistant specializing in **cardiology** and **psychiatry**.
+
+The chatbot leverages advanced **LangChain**, **Groq**, and a **domain-specific knowledge base** to provide reliable, context-aware medical insights alongside real-time vital sign monitoring.
+
+---
+
+### ⚙️ Technical Overview
+
+The RAG system operates in two main phases:
+
+1. **Data Ingestion (Indexing)**
+
+   * **Data Source:** Expert-curated cardiology and psychiatry books & papers.
+   * **Loader:** PyPDFLoader for extracting high-quality text from PDFs.
+   * **Chunking:** RecursiveCharacterTextSplitter for intelligent segmentation.
+   * **Embeddings:** all-MiniLM-L6-v2 (Hugging Face) for semantic understanding.
+   * **Vector Store:** FAISS for ultra-fast similarity search with local persistence.
+
+2. **Retrieval & Generation (Inference)**
+
+   * **LLM Engine:** Groq LPU™ accelerated inference with a large open-source model (e.g., Mixtral / Llama 3).
+   * **LangChain Framework:** Implements create_retrieval_chain with history_aware_retriever for multi-turn context.
+   * **Persona:** Expert cardiologist and psychiatrist, delivering empathetic and evidence-based answers.
+   * **Knowledge Strategy:** Combines retrieved domain context with pretrained medical knowledge for synthesis and reasoning.
+
+---
+
+### 💡 Key Strengths
+
+* ⚡ **Ultra-Low Latency:** Groq’s LPU engine delivers near-instant response times.
+* 📚 **Domain Expertise:** Context drawn from specialized medical literature ensures reliability.
+* 🗣️ **Conversational Memory:** history_aware_retriever maintains context across multiple user queries.
+* 🧩 **Modular Architecture:** Can be embedded directly into the BeatSync web interface or used as an API endpoint.
+
+---
+
+### 🧩 Future Enhancements
+
+* Implement **Maximal Marginal Relevance (MMR)** for diverse document retrieval.
+* Add **RAG Evaluation** with metrics like Faithfulness, Answer Relevance, Context Recall, and Precision.
+* Extend the dataset to include other domains (e.g., stress and sleep monitoring).
+* Integrate chatbot responses into the **BeatSync dashboard**, enabling real-time physiological + conversational feedback.
+
+---
+
+### 🖥️ Example Interaction
+
+👤 **User:** My heart rate seems to stay above 100 BPM even when resting. Should I be worried?
+
+🤖 **BeatSync Assistant:**
+A resting heart rate above 100 BPM may indicate tachycardia.
+It can be caused by stress, dehydration, caffeine, or underlying cardiac issues.
+If this persists or is accompanied by dizziness or chest pain,
+you should consult a cardiologist for an ECG evaluation.
+
+---
+
+### 🔗 Integration in Repository
+
+The RAG chatbot is included in the BeatSync GitHub repository under:
+
+
+## ❤️ Acknowledgments
+
+* **UBFC-rPPG Dataset** for providing benchmark ground-truth physiological data.
+* **MTS-CAN architecture** (Yu et al., CVPR 2019) for multi-task vital sign estimation.
+* **LangChain**, **Groq**, and the open-source AI community for enabling the RAG framework.
+
+
+---
+
+**Made with ❤️ by the BeatSync Team**
+*Empowering accessible, contactless health monitoring for everyone.*
+
