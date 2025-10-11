@@ -18,6 +18,9 @@ User-Friendly Interface: A clean and intuitive web dashboard built with Flask an
 
 ⚙️ How It Works: The Technical Pipeline
 Our system employs a sophisticated end-to-end pipeline to convert raw video pixels into accurate vital signs.
+<img width="1290" height="462" alt="image" src="https://github.com/user-attachments/assets/3d7c383b-4d8f-4d52-9eda-e167eda92554" />
+
+flowchart credits: Xin Liu, Josh Fromm, Shwetak Patel, Daniel McDuff, “Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement”, NeurIPS 2020
 
 Video Input & Face Detection: The application captures the webcam feed in the browser. A lightweight face detection model identifies key facial regions of interest (ROIs).
 
