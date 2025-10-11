@@ -69,3 +69,22 @@ Clone the repository:
 ```bash
 git clone https://github.com/Tanishk-11/BeatSync.git
 cd BeatSync
+```
+Create and activate a virtual environment (recommended):
+
+Windows
+```bash
+python -m venv venv
+.\venv\Scripts\activate
+```
+
+macOS / Linux
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
