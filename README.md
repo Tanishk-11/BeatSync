@@ -49,8 +49,26 @@ Our system employs a sophisticated end-to-end pipeline to convert raw video pixe
 <img width="1290" height="462" alt="image" src="https://github.com/user-attachments/assets/3d7c383b-4d8f-4d52-9eda-e167eda92554" />
 
 flowchart credits: Xin Liu, Josh Fromm, Shwetak Patel, Daniel McDuff, “Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement”, NeurIPS 2020
+---
+
+## 📈 Model Finetuning & Validation
+
+**Key Result:**
+Through rigorous finetuning and validation, we achieved a **30% improvement in accuracy**, reducing the **Mean Absolute Error to just 4.79 BPM** on unseen data.
+
+### 🔬 Our Finetuning Method
+
+1. **K-Fold Cross-Validation**
+   Trained and validated across multiple dataset splits to ensure consistent, generalizable performance.
+
+2. **Hyperparameter Tuning**
+   Optimized learning rates and training epochs for maximum predictive accuracy.
+
+3. **Early Stopping**
+   Automatically halted training when validation performance plateaued — preventing overfitting and ensuring the model captures real physiological signals.
 
 ---
+
 ## 🔧 Setup and Installation
 
 Follow these steps to get **BeatSync** running on your local machine.
