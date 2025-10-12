@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Timer from "./Timer.jsx";
 import Button from "./Button.jsx";
 import analyzeVideo from "../api/analyzeVideo.js";
@@ -14,6 +14,7 @@ export default function VideoRecorder() {
   const handleStart = async () => {
     setRecording(true);
     setStartTimer(true);
+
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     videoRef.current.srcObject = stream;
     videoRef.current.play();
@@ -23,23 +24,41 @@ export default function VideoRecorder() {
     mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunks, { type: "video/webm" });
-      setVideoBlob(blob);
+      // defer the state update to next tick
+      setTimeout(() => setVideoBlob(blob), 0);
     };
     mediaRecorder.start();
     mediaRecorderRef.current = mediaRecorder;
   };
 
-  const handleTimerComplete = async () => {
+  const handleTimerComplete = () => {
     setStartTimer(false);
-    mediaRecorderRef.current.stop();
-    videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-
-    // Send video to backend
-    if (videoBlob) {
-      const output = await analyzeVideo(videoBlob);
-      setModelOutput(output);
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      const tracks = videoRef.current.srcObject?.getTracks();
+      tracks?.forEach((track) => track.stop());
     }
+    // defer state update
+    setTimeout(() => setRecording(false), 0);
   };
+
+  // Upload once videoBlob is ready
+  useEffect(() => {
+    if (!videoBlob) return;
+
+    const uploadVideo = async () => {
+      try {
+        const output = await analyzeVideo(videoBlob);
+        setModelOutput(output);
+      } catch (err) {
+        console.error("Error analyzing video:", err);
+      }
+    };
+
+    // defer upload slightly to avoid concurrent updates during render
+    const timer = setTimeout(() => uploadVideo(), 0);
+    return () => clearTimeout(timer);
+  }, [videoBlob]);
 
   return (
     <div className="flex flex-col items-center">
@@ -49,9 +68,7 @@ export default function VideoRecorder() {
         autoPlay
         muted
       />
-      {!recording && (
-        <Button onClick={handleStart}>Start</Button>
-      )}
+      {!recording && <Button onClick={handleStart}>Start</Button>}
       <Timer start={startTimer} onComplete={handleTimerComplete} />
       {modelOutput && (
         <div className="mt-4">

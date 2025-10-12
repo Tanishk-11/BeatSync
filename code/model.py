@@ -856,63 +856,84 @@
 # ============================================================
 
 import tensorflow as tf
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.layers import Conv2D, Input, AveragePooling2D, multiply, Dense, Dropout, Flatten
-from tensorflow.python.keras.models import Model
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Conv2D, Input, AveragePooling2D, multiply, Dense, Dropout, Flatten, Layer
+from tensorflow.keras.models import Model
 
-class Attention_mask(tf.keras.layers.Layer):
+class Attention_mask(Layer):
     def call(self, x):
+        # Sum across height and width
         xsum = K.sum(x, axis=1, keepdims=True)
         xsum = K.sum(xsum, axis=2, keepdims=True)
+        # Get static shape for scaling
         xshape = K.int_shape(x)
         return x / xsum * xshape[1] * xshape[2] * 0.5
+
     def get_config(self):
         return super(Attention_mask, self).get_config()
 
-class TSM(tf.keras.layers.Layer):
+class TSM(Layer):
     def __init__(self, n_frame=10, **kwargs):
         super(TSM, self).__init__(**kwargs)
         self.n_frame = n_frame
 
     def call(self, x, fold_div=3):
-        nt, h, w, c = x.shape
-        x = K.reshape(x, (-1, self.n_frame, h, w, c))
+        # Use dynamic shapes
+        x_shape = tf.shape(x)
+        batch_size = x_shape[0]
+        h = x_shape[1]
+        w = x_shape[2]
+        c = x_shape[3]
+
+        # Compute number of frames dynamically if batch=1
+        n_frame = self.n_frame
+        inferred_batch = tf.math.floordiv(batch_size, 1)  # fallback
+
+        # Reshape to (batch, n_frame, h, w, c)
+        x = tf.reshape(x, (-1, n_frame, h, w, c))
+
+        # Split channels for temporal shift
         fold = c // fold_div
         last_fold = c - (fold_div - 1) * fold
         out1, out2, out3 = tf.split(x, [fold, fold, last_fold], axis=-1)
 
+        # Temporal shift
         padding_1 = tf.zeros_like(out1)[:, -1:, :, :, :]
-        _, out1 = tf.split(out1, [1, self.n_frame - 1], axis=1)
-        out1 = tf.concat([out1, padding_1], axis=1)
+        out1 = tf.concat([out1[:, 1:, :, :, :], padding_1], axis=1)
 
         padding_2 = tf.zeros_like(out2)[:, :1, :, :, :]
-        out2, _ = tf.split(out2, [self.n_frame - 1, 1], axis=1)
-        out2 = tf.concat([padding_2, out2], axis=1)
+        out2 = tf.concat([padding_2, out2[:, :-1, :, :, :]], axis=1)
 
         out = tf.concat([out1, out2, out3], axis=-1)
-        out = K.reshape(out, (-1, h, w, c))
+        # Flatten back to original shape
+        out = tf.reshape(out, (-1, h, w, c))
         return out
+
     def get_config(self):
         config = super(TSM, self).get_config()
         config.update({'n_frame': self.n_frame})
         return config
 
-def TSM_Cov2D(x, n_frame, nb_filters=128, kernel_size=(3, 3), activation='tanh', padding='same'):
+def TSM_Conv2D(x, n_frame, nb_filters=128, kernel_size=(3, 3), activation='tanh', padding='same'):
     x = TSM(n_frame=n_frame)(x)
     x = Conv2D(nb_filters, kernel_size, padding=padding, activation=activation)(x)
     return x
 
 def MTTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), dropout_rate1=0.25,
              dropout_rate2=0.5, pool_size=(2, 2), nb_dense=128):
+
     diff_input = Input(shape=input_shape)
     rawf_input = Input(shape=input_shape)
 
-    d1 = TSM_Cov2D(diff_input, n_frame, nb_filters1, kernel_size, padding='same', activation='tanh')
-    d2 = TSM_Cov2D(d1, n_frame, nb_filters1, kernel_size, padding='valid', activation='tanh')
+    # Difference stream
+    d1 = TSM_Conv2D(diff_input, n_frame, nb_filters1, kernel_size, padding='same', activation='tanh')
+    d2 = TSM_Conv2D(d1, n_frame, nb_filters1, kernel_size, padding='valid', activation='tanh')
 
+    # Raw feature stream
     r1 = Conv2D(nb_filters1, kernel_size, padding='same', activation='tanh')(rawf_input)
     r2 = Conv2D(nb_filters1, kernel_size, activation='tanh')(r1)
 
+    # Attention gating 1
     g1 = Conv2D(1, (1, 1), padding='same', activation='sigmoid')(r2)
     g1 = Attention_mask()(g1)
     gated1 = multiply([d2, g1])
@@ -923,12 +944,14 @@ def MTTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3),
     r3 = AveragePooling2D(pool_size)(r2)
     r4 = Dropout(dropout_rate1)(r3)
 
-    d5 = TSM_Cov2D(d4, n_frame, nb_filters2, kernel_size, padding='same', activation='tanh')
-    d6 = TSM_Cov2D(d5, n_frame, nb_filters2, kernel_size, padding='valid', activation='tanh')
+    # Second stage
+    d5 = TSM_Conv2D(d4, n_frame, nb_filters2, kernel_size, padding='same', activation='tanh')
+    d6 = TSM_Conv2D(d5, n_frame, nb_filters2, kernel_size, padding='valid', activation='tanh')
 
     r5 = Conv2D(nb_filters2, kernel_size, padding='same', activation='tanh')(r4)
     r6 = Conv2D(nb_filters2, kernel_size, activation='tanh')(r5)
 
+    # Attention gating 2
     g2 = Conv2D(1, (1, 1), padding='same', activation='sigmoid')(r6)
     g2 = Attention_mask()(g2)
     gated2 = multiply([d6, g2])
@@ -938,10 +961,12 @@ def MTTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3),
 
     d9 = Flatten()(d8)
 
+    # Output 1
     d10_y = Dense(nb_dense, activation='tanh')(d9)
     d11_y = Dropout(dropout_rate2)(d10_y)
     out_y = Dense(1, name='output_1')(d11_y)
 
+    # Output 2
     d10_r = Dense(nb_dense, activation='tanh')(d9)
     d11_r = Dropout(dropout_rate2)(d10_r)
     out_r = Dense(1, name='output_2')(d11_r)

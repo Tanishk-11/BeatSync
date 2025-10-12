@@ -4,20 +4,22 @@ export default function Timer({ start, onComplete }) {
   const [time, setTime] = useState(30);
 
   useEffect(() => {
-    let interval;
-    if (start) {
-      setTime(30);
-      interval = setInterval(() => {
-        setTime((prev) => {
-          if (prev === 1) {
-            clearInterval(interval);
-            onComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    if (!start) return;
+
+    setTime(30); // reset time when timer starts
+
+    const interval = setInterval(() => {
+      setTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          // defer onComplete so it doesn't run during render
+          setTimeout(() => onComplete(), 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     return () => clearInterval(interval);
   }, [start, onComplete]);
 
