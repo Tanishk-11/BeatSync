@@ -6,3 +6,5 @@ __pycache__/
 *.h5
 *.pt
 *.ckpt
+chatbot_service/.env
+video_model_service/.env
