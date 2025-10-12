@@ -171,11 +171,16 @@ you should consult a cardiologist for an ECG evaluation.
 The RAG chatbot is included in the BeatSync GitHub repository under:
 
 
-## ❤️ Acknowledgments
+📚 Citations
 
-* **UBFC-rPPG Dataset** for providing benchmark ground-truth physiological data.
-* **MTS-CAN architecture** (Yu et al., CVPR 2019) for multi-task vital sign estimation.
-* **LangChain**, **Groq**, and the open-source AI community for enabling the RAG framework.
+UBFC-rPPG Dataset
+Bérard, A., De Haan, G., & others. “UBFC-rPPG: A Dataset for Remote Physiological Signal Measurement.” IEEE Transactions on Biomedical Engineering, 2020.
+
+MTS-CAN (Multi-Task Temporal Shift Attention Network)
+Yu, Z., Li, X., Zhao, G., & others. “Remote Photoplethysmograph Signal Measurement from Facial Videos Using Spatio-Temporal Networks.” CVPR 2019.
+
+rPPG-Toolbox
+Liu, X., & others. “rPPG-Toolbox: An Open-Source Framework for Remote Photoplethysmography Research.” GitHub Repository: https://github.com/ubicomplab/rPPG-Toolbox
 
 
 ---
