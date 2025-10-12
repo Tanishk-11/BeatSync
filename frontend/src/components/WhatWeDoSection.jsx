@@ -1,4 +1,4 @@
-import whatImage from "../assets/logo.png"; // Replace with your actual image
+import whatImage from "../assets/photo3.jpeg"; // Replace with your actual image
 
 export default function WhatWeDoSection() {
   return (
@@ -26,7 +26,7 @@ export default function WhatWeDoSection() {
           What We Do
         </h2>
         <p className="text-gray-800 text-lg leading-relaxed">
-          <span className="font-semibold text-red-500">HeartSense AI</span> bridges
+          <span className="font-semibold text-red-500">BeatSync AI</span> bridges
           the healthcare accessibility gap by enabling
           <span className="font-medium"> real-time, contactless heart monitoring</span> 
           through everyday devices. Using just a smartphone camera, users can

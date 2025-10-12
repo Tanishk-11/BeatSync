@@ -1,15 +1,28 @@
+import axios from 'axios';
+
+/**
+ * Analyzes the video by sending it to the API Gateway.
+ * The gateway will then forward the request to the Python video model service.
+ * @param {Blob} videoBlob - The video file to be analyzed.
+ * @returns {Promise<object>} - A promise that resolves to the analysis result from the model.
+ */
 export default async function analyzeVideo(videoBlob) {
   const formData = new FormData();
-  formData.append("file", videoBlob, "recording.webm");
+  // The key 'video' must match what the backend (Multer in api_gateway) expects.
+  formData.append("video", videoBlob, "recording.webm");
 
-  const response = await fetch("http://127.0.0.1:8000/analyze_video/", {
-    method: "POST",
-    body: formData,
+  // The request now goes to our API gateway's relative path.
+  // Vite's proxy will redirect this to http://localhost:3000/api/video/analyze during development.
+  const response = await axios.post("/api/video/analyze", formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to analyze video");
+  if (response.status !== 200) {
+    throw new Error("API Gateway failed to analyze video");
   }
 
-  return await response.json();
+  return response.data;
 }
+

@@ -1,4 +1,4 @@
-import logo from "../assets/logo.png"; // replace with your image file
+import image from "../assets/photo2.jpeg"; // replace with your image file
 
 export default function AboutSection() {
   return (
@@ -12,7 +12,7 @@ export default function AboutSection() {
           About Deepsync
         </h2>
         <p className="text-gray-800 text-lg leading-relaxed">
-          <span className="font-semibold text-red-500">HeartSense AI</span> is a
+          <span className="font-semibold text-red-500">BeatSync AI</span> is a
           cutting-edge web platform that transforms any regular smartphone or
           laptop camera into a{" "}
           <span className="font-medium">remote heart health monitor</span>.
@@ -34,7 +34,7 @@ export default function AboutSection() {
       {/* Right Image */}
       <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center animate-fadeIn">
         <img
-          src={logo}
+          src={image}
           alt="About Deepsync"
           className="w-3/4 max-w-md rounded-2xl shadow-lg transition-transform duration-500 hover:scale-105"
         />

@@ -25,12 +25,20 @@ export default function LandingSection() {
       </p>
 
       {/* CTA Button */}
+      <div className="mb-4 flex flex-col sm:flex-row gap-10">
       <Button
         onClick={() => navigate("/analyzer")}
         className="bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl"
       >
         Start Analysis
       </Button>
+      <Button
+        onClick={() => navigate("/dashboard")}
+        className="bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl"
+      >
+        Dashbaord
+      </Button>
+      </div>
     </section>
   );
 }

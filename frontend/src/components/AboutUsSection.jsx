@@ -2,45 +2,45 @@ export default function AboutUsSection() {
   const teamMembers = [
     {
       name: "Aryan Nahata",
-      role: "AI & Web Developer",
+      role: "AIML | BIT Mesra",
       description:
-        "Specializes in deep learning and full-stack development, leading AI model integration and system architecture.",
-      image: "/images/team/aryan.jpg",
+        "",
+      image: "",
     },
     {
       name: "Tanishk Singh Thakur",
-      role: "Frontend Developer",
+      role: "AIML | BIT Mesra",
       description:
-        "Focuses on building intuitive and responsive user interfaces with React, TailwindCSS, and modern design principles.",
-      image: "/images/team/moksh.jpg",
+        "",
+      image: "",
     },
     {
       name: "Yash Rai",
-      role: "Backend Developer",
+      role: "AIML | BIT Mesra",
       description:
-        "Manages FastAPI backend services, API integration, and database optimization for smooth data flow and security.",
-      image: "/images/team/siddhant.jpg",
+        "",
+      image: "",
     },
     {
       name: "Tejas Ganesh",
-      role: "Research & ML Engineer",
+      role: "AIML | BIT Mesra",
       description:
-        "Handles model experimentation and validation, ensuring high accuracy in rPPG signal extraction and heart rate prediction.",
-      image: "/images/team/sanyati.jpg",
+        "",
+      image: "",
     },
     {
       name: "Madhur Tandon",
-      role: "UI/UX Designer",
+      role: "CSE | BIT Mesra",
       description:
-        "Designs seamless user experiences and ensures visual consistency across the platform with user-centered design.",
-      image: "/images/team/siddhi.jpg",
+        "",
+      image: "",
     },
     {
       name: "Aditya Karn",
-      role: "Project & Integration Lead",
+      role: "CSE | BIT Mesra",
       description:
-        "Oversees coordination, testing, and deployment — ensuring all modules integrate flawlessly for a unified product.",
-      image: "/images/team/aryan_sharma.jpg",
+        "",
+      image: "",
     },
   ];
 

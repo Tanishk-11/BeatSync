@@ -1,4 +1,4 @@
-import howImage from "../assets/logo.png"; // Replace with your actual image
+import howImage from "../assets/photo1.jpeg"; // Replace with your actual image
 
 export default function HowWeDoSection() {
   return (
