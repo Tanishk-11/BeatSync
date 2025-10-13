@@ -6,7 +6,7 @@ h5py
 opencv-python==4.8.1.78
 dlib==19.24.1 
 mediapipe==0.10.13
-numpy==1.24.3
+numpy==1.23.5
 scipy
 opencv-python
 scikit-image
