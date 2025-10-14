@@ -20,7 +20,6 @@
 
 
 
-
 # Use a slim Python image for a smaller size
 FROM python:3.11-slim
 
@@ -29,10 +28,10 @@ WORKDIR /app
 
 # Install system-level dependencies required for dlib and opencv-python
 # Also upgrade pip to the latest version
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
-    libgl1-mesa-glx \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir --upgrade pip
 
@@ -49,3 +48,4 @@ EXPOSE 8000
 # The command to run the application
 # Using --host 0.0.0.0 makes it accessible from outside the container
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+
