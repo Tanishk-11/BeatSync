@@ -1,10 +1,22 @@
-fastapi
-uvicorn
-pydantic
-langchain
-langchain_huggingface
-dotenv
-langchain_community
-langchain_groq
-sentence-transformers
-faiss-cpu
+# fastapi
+# uvicorn
+# pydantic
+# langchain
+# langchain_huggingface
+# dotenv
+# langchain_community
+# langchain_groq
+# sentence-transformers
+# faiss-cpu
+
+
+fastapi>=0.110.0
+uvicorn>=0.23.2
+pydantic>=2.4.2
+langchain>=0.0.345
+langchain_huggingface>=0.0.1
+python-dotenv>=1.0.0
+langchain_community>=0.0.3
+langchain_groq>=0.1.0
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
