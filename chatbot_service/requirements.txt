@@ -28,5 +28,5 @@ langchain==0.3.27
 langchain-community==0.3.30
 langchain-groq==0.3.8
 langchain-huggingface==0.3.1
-sentence-transformers>=5.1.1
+sentence-transformers==5.1.1
 faiss-cpu==1.12.0
