@@ -1,10 +1,15 @@
 import multer from "multer";
 
-// Configure multer to store files in memory.
-// This is efficient because the API gateway doesn't need to save the file to disk.
-// It will just hold the file in memory long enough to stream it to the Python service.
+// Configure multer to store files in memory
 const storage = multer.memoryStorage();
 
-// Initialize multer with the memory storage configuration.
-export const upload = multer({ storage: storage });
+// Set a file size limit (e.g., 100 MB)
+const limits = {
+  fileSize: 100 * 1024 * 1024, // 100 MB in bytes
+};
 
+// Initialize multer with storage and limits
+export const upload = multer({
+  storage: storage,
+  limits: limits,
+});
