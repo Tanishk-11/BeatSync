@@ -58,37 +58,38 @@ export const analyzeVideo = async (req, res) => {
       return res.status(400).send("No file uploaded.");
     }
 
-    // 1. Create a new FormData instance to forward the request.
+    // 1. Create a new FormData instance for forwarding.
     const formData = new FormData();
+    
+    // 2. Append the file buffer from multer.
+    // The key 'video' must match what the Python backend expects.
+    formData.append("video", req.file.buffer, req.file.originalname);
 
-    // 2. Append the video buffer directly.
-    // We give it a name ("video") that matches what the Python backend expects.
-    formData.append("video", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-    });
-
-    // 3. Make the request to the video model service.
-    // We let axios handle the headers automatically by passing the formData object.
-    // A longer timeout is added for robustness, as video processing can take time.
+    // 3. Forward the request to the video service.
+    // We pass the formData object directly. Axios and the form-data library
+    // will work together to set the correct multipart headers.
     const response = await axios.post(
       `${process.env.VIDEO_SERVICE_URL}/predict/`,
       formData,
       {
-        headers: formData.getHeaders(), // Let the form-data library generate the correct headers
-        timeout: 60000, // 60-second timeout
+        headers: {
+          ...formData.getHeaders(), // Generates the correct Content-Type with boundary
+        },
+        timeout: 90000, // Increased timeout to 90 seconds for long videos
       }
     );
 
-    // 4. Send the prediction results back to the frontend.
+    // 4. Return the successful response to the frontend.
     res.json(response.data);
 
   } catch (error) {
-    // Log detailed error information for easier debugging
+    // Provide more detailed error logging for debugging.
     console.error(
       "Error forwarding video to service:",
       error.response ? error.response.data : error.message
     );
-    res.status(500).send("An internal error occurred while processing the video.");
+    res
+      .status(500)
+      .send("An internal error occurred while analyzing the video.");
   }
 };
