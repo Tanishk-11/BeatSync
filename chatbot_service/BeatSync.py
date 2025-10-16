@@ -17,7 +17,7 @@ if not groq_api_key:
 print("Loading vector store from 'faiss_index'...")
 cache_folder = '/tmp/hf_cache' 
 embedding = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2", 
+    model_name="all-MiniLM-L6-v2", 
     cache_folder=cache_folder
 )
 vector_store = FAISS.load_local(
