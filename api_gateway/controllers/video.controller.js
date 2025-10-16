@@ -53,55 +53,47 @@ import axios from "axios";
 import FormData from "form-data";
 
 export const analyzeVideo = async (req, res) => {
-  // Log that the function has been triggered
-  console.log("analyzeVideo controller initiated.");
-
   try {
+    // 1. Immediately check if the file exists.
     if (!req.file) {
-      console.error("Error: No file was received from the frontend.");
+      console.error("API Gateway Error: No file was received by multer.");
       return res.status(400).send("No file uploaded.");
     }
 
-    console.log(`Received file: ${req.file.originalname}, Size: ${req.file.size} bytes`);
-
-    // --- Create and log the forwarding request ---
+    // 2. Create the form data for forwarding.
     const formData = new FormData();
+
+    // 3. Append the file buffer from memory.
+    // The key 'video' must exactly match what the Python backend expects.
     formData.append("video", req.file.buffer, req.file.originalname);
 
-    const targetUrl = `${process.env.VIDEO_SERVICE_URL}/predict/`;
-    const headers = formData.getHeaders();
-    
-    // THIS IS THE CRITICAL LOGGING STEP
-    console.log(`Forwarding video to: ${targetUrl}`);
-    console.log("Using headers:", headers);
+    // 4. Make the request to the video service. This is the critical part.
+    const response = await axios.post(
+      `${process.env.VIDEO_SERVICE_URL}/predict/`,
+      formData,
+      {
+        // This line is the solution: it automatically generates the
+        // precise 'Content-Type: multipart/form-data; boundary=...'
+        // header that the backend server needs to understand the file.
+        headers: {
+          ...formData.getHeaders(),
+        },
+        // A long timeout is essential, as the model can take time to run.
+        timeout: 90000, // 90 seconds
+      }
+    );
 
-    const response = await axios.post(targetUrl, formData, {
-      headers: headers,
-      timeout: 90000, // 90-second timeout for video processing
-    });
-
-    console.log("Successfully received response from video service.");
+    // 5. Send the successful result back to the frontend.
     res.json(response.data);
 
   } catch (error) {
-    // THIS PROVIDES DETAILED ERROR LOGGING
-    console.error("--- AXIOS REQUEST FAILED ---");
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error("Data:", error.response.data);
-      console.error("Status:", error.response.status);
-      console.error("Headers:", error.response.headers);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error("Request:", error.request);
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error("Error Message:", error.message);
-    }
-    console.error("Full Error Config:", error.config);
-    console.error("--- END OF ERROR ---");
-
-    res.status(500).send("An internal error occurred while analyzing the video.");
+    // This will log the true error to your Render logs for diagnosis.
+    console.error(
+      "API Gateway Crash:",
+      error.response ? error.response.data : error.message
+    );
+    res
+      .status(500)
+      .send("An internal error occurred while analyzing the video.");
   }
 };
