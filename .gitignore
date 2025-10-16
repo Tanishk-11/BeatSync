@@ -7,4 +7,7 @@ __pycache__/
 *.pt
 *.ckpt
 chatbot_service/.env
+chatbot_service/__pycache__
 video_model_service/.env
+video_model_service/__pycache__
+frontend/node_modules
