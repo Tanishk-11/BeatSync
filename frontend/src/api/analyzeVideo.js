@@ -60,8 +60,8 @@
 
 import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL;
-const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME; // <-- IMPORTANT: SET THIS
-const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY; // <-- IMPORTANT: SET THIS
+const CLOUDINARY_CLOUD_NAME = import.meta.env.CLOUDINARY_CLOUD_NAME; // <-- IMPORTANT: SET THIS
+const CLOUDINARY_API_KEY = import.meta.env.CLOUDINARY_API_KEY; // <-- IMPORTANT: SET THIS
 
 const analyzeVideo = async (videoBlob) => {
   try {
