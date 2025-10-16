@@ -52,7 +52,7 @@
 const axios = require("axios");
 const FormData = require("form-data");
 
-const analyzeVideo = async (req, res) => {
+export const analyzeVideo = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).send("No file uploaded.");
@@ -92,5 +92,3 @@ const analyzeVideo = async (req, res) => {
     res.status(500).send("An internal error occurred while processing the video.");
   }
 };
-
-module.exports = { analyzeVideo };
