@@ -13,13 +13,25 @@
 # dlib
 
 
-fastapi==0.104.1
-uvicorn==0.24.0
+# fastapi==0.104.1
+# uvicorn==0.24.0
+# python-multipart==0.0.6
+# tensorflow==2.12.0
+# h5py==3.10.0
+# opencv-python==4.8.1.78
+# dlib==19.24.1
+# mediapipe==0.10.9
+# numpy==1.23.5
+# scipy==1.11.3
+# scikit-image==0.22.0
+
+fastapi
+uvicorn
 python-multipart==0.0.6
 tensorflow==2.12.0
 h5py==3.10.0
 opencv-python==4.8.1.78
-dlib==19.24.1
+# dlib==19.24.1
 mediapipe==0.10.9
 numpy==1.23.5
 scipy==1.11.3

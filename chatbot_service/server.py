@@ -3,7 +3,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 import logging
-import os
+from fastapi.middleware.cors import CORSMiddleware # 1. ADD THIS IMPORT
+
 # Local import from your RAG logic file
 from BeatSync import ask_question
 
@@ -15,6 +16,17 @@ app = FastAPI(
     title="BeatSync RAG Chatbot Service",
     description="A dedicated API to interact with the Groq-powered RAG model.",
     version="1.0.0"
+)
+
+# 2. ADD THIS ENTIRE BLOCK
+# This allows your API Gateway on Render to communicate with this service.
+# --------------------------------------------------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods
+    allow_headers=["*"], # Allows all headers
 )
 
 # --- Pydantic Models for Request/Response ---
