@@ -223,67 +223,135 @@
 
 
 
+# import cv2
+# import numpy as np
+# import mediapipe as mp
+# from skimage.transform import resize
+# import logging
+
+# # Set up a logger
+# logger = logging.getLogger(__name__)
+
+# def preprocess_video_for_inference(video_path, target_size=(36, 36)):
+#     """
+#     Preprocesses a video by detecting and cropping faces using MediaPipe,
+#     then calculates the normalized motion differences for model inference.
+#     This is a direct replacement for the previous dlib-based approach.
+#     """
+    
+#     # --- 1. SETUP MEDIAPIPE ---
+#     # Use the lightweight and efficient Face Detection model
+#     mp_face_detection = mp.solutions.face_detection
+#     face_detection = mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5)
+
+#     # --- 2. VIDEO CAPTURE AND SETUP ---
+#     cap = cv2.VideoCapture(video_path)
+#     if not cap.isOpened():
+#         raise ValueError(f"Error: Could not open video file: {video_path}")
+
+#     cropped_frames = []
+#     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+#     logger.info(f"Total frames to process: {total_frames}")
+
+#     # --- 3. FRAME-BY-FRAME PROCESSING ---
+#     while cap.isOpened():
+#         ret, frame = cap.read()
+#         if not ret:
+#             break
+
+#         # Convert the BGR image to RGB for MediaPipe
+#         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+#         # Process the frame to detect faces
+#         results = face_detection.process(rgb_frame)
+
+#         if results.detections:
+#             # Get the bounding box of the first detected face
+#             detection = results.detections[0]
+#             bboxC = detection.location_data.relative_bounding_box
+#             ih, iw, _ = frame.shape
+            
+#             # Calculate absolute coordinates
+#             x, y, w, h = int(bboxC.xmin * iw), int(bboxC.ymin * ih), \
+#                          int(bboxC.width * iw), int(bboxC.height * ih)
+            
+#             # Ensure coordinates are valid
+#             x, y, w, h = max(0, x), max(0, y), max(0, w), max(0, h)
+            
+#             face = frame[y:y+h, x:x+w]
+            
+#             if face.size > 0:
+#                 # Resize face to the target dimension (e.g., 36x36)
+#                 resized_face = resize(face, target_size, anti_aliasing=True)
+#                 # Append all three color channels
+#                 cropped_frames.append(resized_face)
+        
+#     cap.release()
+#     face_detection.close()
+
+#     if not cropped_frames:
+#         raise ValueError("Could not detect a face in any frame of the video.")
+
+#     logger.info(f"Successfully extracted face crops from {len(cropped_frames)} frames.")
+
+#     # --- 4. CORE POST-PROCESSING LOGIC (UNCHANGED) ---
+#     Xsub = np.array(cropped_frames, dtype=np.float32)
+    
+#     # Normalize Appearance Stream
+#     Xsub = (Xsub - np.mean(Xsub)) / np.std(Xsub)
+
+#     # Calculate Motion Stream (Temporal Difference)
+#     dXsub = np.diff(Xsub, axis=0)
+#     # Pad the last frame to maintain original length
+#     dXsub = np.concatenate((dXsub, np.zeros((1, target_size[0], target_size[1], 3), dtype=np.float32)), axis=0)
+#     # Normalize Motion Stream
+#     dXsub = (dXsub - np.mean(dXsub)) / np.std(dXsub)
+
+#     # Combine streams into a 6-channel array as required by the model
+#     final_input = np.concatenate((dXsub, Xsub), axis=3)
+    
+#     return final_input
+
 import cv2
 import numpy as np
 import mediapipe as mp
 from skimage.transform import resize
 import logging
 
-# Set up a logger
 logger = logging.getLogger(__name__)
 
 def preprocess_video_for_inference(video_path, target_size=(36, 36)):
-    """
-    Preprocesses a video by detecting and cropping faces using MediaPipe,
-    then calculates the normalized motion differences for model inference.
-    This is a direct replacement for the previous dlib-based approach.
-    """
-    
-    # --- 1. SETUP MEDIAPIPE ---
-    # Use the lightweight and efficient Face Detection model
     mp_face_detection = mp.solutions.face_detection
     face_detection = mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5)
 
-    # --- 2. VIDEO CAPTURE AND SETUP ---
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise ValueError(f"Error: Could not open video file: {video_path}")
 
     cropped_frames = []
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    logger.info(f"Total frames to process: {total_frames}")
-
-    # --- 3. FRAME-BY-FRAME PROCESSING ---
+    
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
-        # Convert the BGR image to RGB for MediaPipe
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Process the frame to detect faces
         results = face_detection.process(rgb_frame)
 
         if results.detections:
-            # Get the bounding box of the first detected face
             detection = results.detections[0]
             bboxC = detection.location_data.relative_bounding_box
             ih, iw, _ = frame.shape
             
-            # Calculate absolute coordinates
             x, y, w, h = int(bboxC.xmin * iw), int(bboxC.ymin * ih), \
                          int(bboxC.width * iw), int(bboxC.height * ih)
             
-            # Ensure coordinates are valid
             x, y, w, h = max(0, x), max(0, y), max(0, w), max(0, h)
             
             face = frame[y:y+h, x:x+w]
             
             if face.size > 0:
-                # Resize face to the target dimension (e.g., 36x36)
                 resized_face = resize(face, target_size, anti_aliasing=True)
-                # Append all three color channels
                 cropped_frames.append(resized_face)
         
     cap.release()
@@ -292,22 +360,14 @@ def preprocess_video_for_inference(video_path, target_size=(36, 36)):
     if not cropped_frames:
         raise ValueError("Could not detect a face in any frame of the video.")
 
-    logger.info(f"Successfully extracted face crops from {len(cropped_frames)} frames.")
-
-    # --- 4. CORE POST-PROCESSING LOGIC (UNCHANGED) ---
     Xsub = np.array(cropped_frames, dtype=np.float32)
     
-    # Normalize Appearance Stream
     Xsub = (Xsub - np.mean(Xsub)) / np.std(Xsub)
 
-    # Calculate Motion Stream (Temporal Difference)
     dXsub = np.diff(Xsub, axis=0)
-    # Pad the last frame to maintain original length
     dXsub = np.concatenate((dXsub, np.zeros((1, target_size[0], target_size[1], 3), dtype=np.float32)), axis=0)
-    # Normalize Motion Stream
     dXsub = (dXsub - np.mean(dXsub)) / np.std(dXsub)
 
-    # Combine streams into a 6-channel array as required by the model
     final_input = np.concatenate((dXsub, Xsub), axis=3)
     
     return final_input
