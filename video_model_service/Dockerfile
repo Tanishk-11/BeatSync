@@ -27,13 +27,12 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system-level dependencies required for dlib and opencv-python
-# Also upgrade pip to the latest version
+# This is the crucial new step
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
-    libgl1 \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir --upgrade pip
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
 
 # First, copy and install requirements to leverage Docker's layer cache
 COPY requirements.txt requirements.txt
@@ -48,4 +47,3 @@ EXPOSE 8000
 # The command to run the application
 # Using --host 0.0.0.0 makes it accessible from outside the container
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
-
