@@ -53,43 +53,55 @@ import axios from "axios";
 import FormData from "form-data";
 
 export const analyzeVideo = async (req, res) => {
+  // Log that the function has been triggered
+  console.log("analyzeVideo controller initiated.");
+
   try {
     if (!req.file) {
+      console.error("Error: No file was received from the frontend.");
       return res.status(400).send("No file uploaded.");
     }
 
-    // 1. Create a new FormData instance for forwarding.
+    console.log(`Received file: ${req.file.originalname}, Size: ${req.file.size} bytes`);
+
+    // --- Create and log the forwarding request ---
     const formData = new FormData();
-    
-    // 2. Append the file buffer from multer.
-    // The key 'video' must match what the Python backend expects.
     formData.append("video", req.file.buffer, req.file.originalname);
 
-    // 3. Forward the request to the video service.
-    // We pass the formData object directly. Axios and the form-data library
-    // will work together to set the correct multipart headers.
-    const response = await axios.post(
-      `${process.env.VIDEO_SERVICE_URL}/predict/`,
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(), // Generates the correct Content-Type with boundary
-        },
-        timeout: 90000, // Increased timeout to 90 seconds for long videos
-      }
-    );
+    const targetUrl = `${process.env.VIDEO_SERVICE_URL}/predict/`;
+    const headers = formData.getHeaders();
+    
+    // THIS IS THE CRITICAL LOGGING STEP
+    console.log(`Forwarding video to: ${targetUrl}`);
+    console.log("Using headers:", headers);
 
-    // 4. Return the successful response to the frontend.
+    const response = await axios.post(targetUrl, formData, {
+      headers: headers,
+      timeout: 90000, // 90-second timeout for video processing
+    });
+
+    console.log("Successfully received response from video service.");
     res.json(response.data);
 
   } catch (error) {
-    // Provide more detailed error logging for debugging.
-    console.error(
-      "Error forwarding video to service:",
-      error.response ? error.response.data : error.message
-    );
-    res
-      .status(500)
-      .send("An internal error occurred while analyzing the video.");
+    // THIS PROVIDES DETAILED ERROR LOGGING
+    console.error("--- AXIOS REQUEST FAILED ---");
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error("Data:", error.response.data);
+      console.error("Status:", error.response.status);
+      console.error("Headers:", error.response.headers);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error("Request:", error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error("Error Message:", error.message);
+    }
+    console.error("Full Error Config:", error.config);
+    console.error("--- END OF ERROR ---");
+
+    res.status(500).send("An internal error occurred while analyzing the video.");
   }
 };
