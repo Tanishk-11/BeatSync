@@ -104,7 +104,7 @@
 import axios from "axios";
 import { v2 as cloudinary } from "cloudinary";
 
-// Configure Cloudinary with your credentials from environment variables
+// Configure Cloudinary from your environment variables
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -115,11 +115,15 @@ cloudinary.config({
 export const getUploadSignature = (req, res) => {
   try {
     const timestamp = Math.round(new Date().getTime() / 1000);
+    const folder = "beatsync_videos"; // The folder we will upload to
 
-    // Get a signature from Cloudinary
+    // --- THIS IS THE FIX ---
+    // The signature must be generated from ALL parameters that will be sent
+    // in the upload request (except the file itself and api_key).
     const signature = cloudinary.utils.api_sign_request(
       {
         timestamp: timestamp,
+        folder: folder, // Including the folder in the signature
       },
       process.env.CLOUDINARY_API_SECRET
     );
@@ -152,4 +156,4 @@ export const analyzeVideo = async (req, res) => {
     console.error("Error forwarding analysis request:", error.response ? error.response.data : error.message);
     res.status(500).send("An error occurred during video analysis.");
   }
-};
+};  
