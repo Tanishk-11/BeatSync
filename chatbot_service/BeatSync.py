@@ -15,7 +15,11 @@ if not groq_api_key:
     raise ValueError("GROQ_API_KEY not found in .env file or environment variables")
 
 print("Loading vector store from 'faiss_index'...")
-embedding = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+cache_folder = '/tmp/hf_cache' 
+embedding = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2", 
+    cache_folder=cache_folder
+)
 vector_store = FAISS.load_local(
     "faiss_index",
     embeddings=embedding,
