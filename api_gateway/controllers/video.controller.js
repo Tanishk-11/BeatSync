@@ -49,51 +49,107 @@
 //   }
 // };
 
-import axios from "axios";
-import FormData from "form-data";
+// -----------------------------------------------------------
 
+// import axios from "axios";
+// import FormData from "form-data";
+
+// export const analyzeVideo = async (req, res) => {
+//   try {
+//     // 1. Immediately check if the file exists.
+//     if (!req.file) {
+//       console.error("API Gateway Error: No file was received by multer.");
+//       return res.status(400).send("No file uploaded.");
+//     }
+
+//     // 2. Create the form data for forwarding.
+//     const formData = new FormData();
+
+//     // 3. Append the file buffer from memory.
+//     // The key 'video' must exactly match what the Python backend expects.
+//     formData.append("video", req.file.buffer, req.file.originalname);
+
+//     // 4. Make the request to the video service. This is the critical part.
+//     const response = await axios.post(
+//       `${process.env.VIDEO_SERVICE_URL}/predict/`,
+//       formData,
+//       {
+//         // This line is the solution: it automatically generates the
+//         // precise 'Content-Type: multipart/form-data; boundary=...'
+//         // header that the backend server needs to understand the file.
+//         headers: {
+//           ...formData.getHeaders(),
+//         },
+//         // A long timeout is essential, as the model can take time to run.
+//         timeout: 90000, // 90 seconds
+//       }
+//     );
+
+//     // 5. Send the successful result back to the frontend.
+//     res.json(response.data);
+
+//   } catch (error) {
+//     // This will log the true error to your Render logs for diagnosis.
+//     console.error(
+//       "API Gateway Crash:",
+//       error.response ? error.response.data : error.message
+//     );
+//     res
+//       .status(500)
+//       .send("An internal error occurred while analyzing the video.");
+//   }
+// };
+
+
+import axios from "axios";
+import { v2 as cloudinary } from "cloudinary";
+
+// Configure Cloudinary with your credentials from environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// This function generates the secure, temporary URL for the frontend to use
+export const getUploadSignature = (req, res) => {
+  try {
+    const timestamp = Math.round(new Date().getTime() / 1000);
+
+    // Get a signature from Cloudinary
+    const signature = cloudinary.utils.api_sign_request(
+      {
+        timestamp: timestamp,
+      },
+      process.env.CLOUDINARY_API_SECRET
+    );
+
+    // Send the signature and timestamp back to the frontend
+    res.json({ timestamp, signature });
+  } catch (error) {
+    console.error("Error generating Cloudinary signature:", error);
+    res.status(500).send("Could not prepare video upload.");
+  }
+};
+
+// This function is called AFTER the frontend has uploaded the video
 export const analyzeVideo = async (req, res) => {
   try {
-    // 1. Immediately check if the file exists.
-    if (!req.file) {
-      console.error("API Gateway Error: No file was received by multer.");
-      return res.status(400).send("No file uploaded.");
+    // The frontend will now send a JSON body with the video's public URL
+    const { videoUrl } = req.body;
+    if (!videoUrl) {
+      return res.status(400).send("No video URL provided.");
     }
 
-    // 2. Create the form data for forwarding.
-    const formData = new FormData();
-
-    // 3. Append the file buffer from memory.
-    // The key 'video' must exactly match what the Python backend expects.
-    formData.append("video", req.file.buffer, req.file.originalname);
-
-    // 4. Make the request to the video service. This is the critical part.
+    // Forward the URL to the video model service
     const response = await axios.post(
       `${process.env.VIDEO_SERVICE_URL}/predict/`,
-      formData,
-      {
-        // This line is the solution: it automatically generates the
-        // precise 'Content-Type: multipart/form-data; boundary=...'
-        // header that the backend server needs to understand the file.
-        headers: {
-          ...formData.getHeaders(),
-        },
-        // A long timeout is essential, as the model can take time to run.
-        timeout: 90000, // 90 seconds
-      }
+      { video_url: videoUrl } // Send as JSON, not a file
     );
 
-    // 5. Send the successful result back to the frontend.
     res.json(response.data);
-
   } catch (error) {
-    // This will log the true error to your Render logs for diagnosis.
-    console.error(
-      "API Gateway Crash:",
-      error.response ? error.response.data : error.message
-    );
-    res
-      .status(500)
-      .send("An internal error occurred while analyzing the video.");
+    console.error("Error forwarding analysis request:", error.response ? error.response.data : error.message);
+    res.status(500).send("An error occurred during video analysis.");
   }
 };

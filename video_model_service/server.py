@@ -150,53 +150,116 @@
 
 
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
+# from fastapi import FastAPI, UploadFile, File, HTTPException
+# from fastapi.responses import JSONResponse
+# import uvicorn
+# import logging
+# from predict_vitals import predict_vitals
+# from fastapi.middleware.cors import CORSMiddleware # 1. ADD THIS IMPORT
+
+# app = FastAPI(
+#     title="BeatSync Video Model Service",
+#     description="An API to process video files and predict vital signs.",
+#     version="1.0.0"
+# )
+
+# # 2. ADD THIS ENTIRE BLOCK
+# # This allows your API Gateway on Render to communicate with this service.
+# # --------------------------------------------------------------------------
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"], # Allows all origins
+#     allow_credentials=True,
+#     allow_methods=["*"], # Allows all methods
+#     allow_headers=["*"], # Allows all headers
+# )
+# # --------------------------------------------------------------------------
+
+
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
+
+# @app.post("/predict/")
+# async def predict(video: UploadFile = File(...)):
+#     if not video.filename.endswith('.mp4'):
+#         raise HTTPException(status_code=400, detail="Invalid file format. Please upload an MP4 video.")
+    
+#     try:
+#         # Save the uploaded video file temporarily
+#         video_path = f"/tmp/{video.filename}"
+#         with open(video_path, "wb") as buffer:
+#             buffer.write(await video.read())
+        
+#         logger.info(f"Processing video: {video_path}")
+        
+#         # Get predictions
+#         predictions = predict_vitals(video_path)
+        
+#         return JSONResponse(content=predictions)
+        
+#     except Exception as e:
+#         logger.exception(f"An error occurred during prediction: {e}")
+#         raise HTTPException(status_code=500, detail=str(e))
+
+# @app.get("/")
+# def read_root():
+#     return {"status": "Video Model Service is running"}
+
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="0.0.0.0", port=8002) # This port is for local dev only
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import uvicorn
 import logging
+import requests
+import os
 from predict_vitals import predict_vitals
-from fastapi.middleware.cors import CORSMiddleware # 1. ADD THIS IMPORT
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(
-    title="BeatSync Video Model Service",
-    description="An API to process video files and predict vital signs.",
-    version="1.0.0"
-)
+app = FastAPI()
 
-# 2. ADD THIS ENTIRE BLOCK
-# This allows your API Gateway on Render to communicate with this service.
-# --------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], # Allows all methods
-    allow_headers=["*"], # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-# --------------------------------------------------------------------------
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Pydantic model for the incoming request body
+class VideoRequest(BaseModel):
+    video_url: str
+
 @app.post("/predict/")
-async def predict(video: UploadFile = File(...)):
-    if not video.filename.endswith('.mp4'):
-        raise HTTPException(status_code=400, detail="Invalid file format. Please upload an MP4 video.")
-    
+async def predict(request: VideoRequest):
     try:
-        # Save the uploaded video file temporarily
-        video_path = f"/tmp/{video.filename}"
-        with open(video_path, "wb") as buffer:
-            buffer.write(await video.read())
-        
-        logger.info(f"Processing video: {video_path}")
-        
-        # Get predictions
+        # --- Download the video from the provided URL ---
+        video_url = request.video_url
+        logger.info(f"Downloading video from: {video_url}")
+
+        # Use a temporary file path
+        video_path = f"/tmp/video_to_process.mp4"
+
+        r = requests.get(video_url, stream=True)
+        r.raise_for_status()
+        with open(video_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        logger.info(f"Video saved to: {video_path}")
+
+        # --- Get predictions ---
         predictions = predict_vitals(video_path)
-        
-        return JSONResponse(content=predictions)
-        
+
+        # Clean up the downloaded file
+        os.remove(video_path)
+
+        return predictions
+
     except Exception as e:
         logger.exception(f"An error occurred during prediction: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -204,6 +267,3 @@ async def predict(video: UploadFile = File(...)):
 @app.get("/")
 def read_root():
     return {"status": "Video Model Service is running"}
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8002) # This port is for local dev only

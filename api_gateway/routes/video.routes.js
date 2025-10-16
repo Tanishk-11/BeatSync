@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { upload } from "../middleware/upload.js";
-// 1. Correct the import name here
-import { analyzeVideo } from "../controllers/video.controller.js";
+import { getUploadSignature, analyzeVideo } from "../controllers/video.controller.js";
 
 const router = Router();
 
-// 2. Correct the function name used in the route handler
-router.route("/analyze").post(upload.single("video"), analyzeVideo);
+// Route for the frontend to get the secure upload signature
+router.route("/get-upload-signature").get(getUploadSignature);
+
+// Route for the frontend to trigger analysis AFTER uploading
+router.route("/analyze").post(analyzeVideo);
 
 export default router;
