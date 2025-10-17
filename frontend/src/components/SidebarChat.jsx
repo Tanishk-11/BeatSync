@@ -90,8 +90,15 @@
 
 
 
+// 
+
+
+
 import { useState, useEffect, useRef } from "react";
 import axios from 'axios';
+
+// The base URL for your API Gateway deployed on Render.
+const API_GATEWAY_URL = 'https://beatsync-api-gateway.onrender.com/api';
 
 export default function SidebarChat({ modelOutput }) {
   const [messages, setMessages] = useState([]);
@@ -109,6 +116,9 @@ export default function SidebarChat({ modelOutput }) {
       const initialText = `Analysis complete.\nHeart Rate: ${modelOutput.heart_rate} BPM\nBreathing Rate: ${modelOutput.breathing_rate} breaths/min.\n\nHow can I help you interpret these results?`;
       const initialMessage = { sender: "bot", text: initialText };
       setMessages([initialMessage]);
+    } else {
+        // A default welcome message before analysis is complete
+        setMessages([{ sender: 'bot', text: "Hello! Once your video is analyzed, I'll provide insights on your results right here." }]);
     }
   }, [modelOutput]);
 
@@ -123,10 +133,11 @@ export default function SidebarChat({ modelOutput }) {
     setInput("");
 
     try {
-      // --- THIS IS THE CORRECTED LINE ---
-      // Send the request to the relative API Gateway endpoint.
-      // Vite proxies this to http://localhost:3000/api/chat
-      const res = await axios.post("/api/chat", { message: currentInput });
+      // ====================================================================================
+      // THE FIX: Changed the key from 'message' to 'query' to match the API Gateway.
+      // Also, using the full URL to ensure it works correctly after deployment.
+      // ====================================================================================
+      const res = await axios.post(`${API_GATEWAY_URL}/chat`, { query: currentInput });
       
       setMessages((prev) => [...prev, { sender: "bot", text: res.data.response }]);
     } catch (err) {
@@ -163,6 +174,7 @@ export default function SidebarChat({ modelOutput }) {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about your results..."
             className="flex-1 p-2 bg-transparent focus:outline-none"
+            disabled={!modelOutput} // Disable input until results are in
           />
           <button
             type="submit"
@@ -178,3 +190,4 @@ export default function SidebarChat({ modelOutput }) {
     </div>
   );
 }
+
