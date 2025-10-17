@@ -379,12 +379,13 @@ import tensorflow as tf
 import logging
 
 from model import MTTS_CAN
+# CORRECTED IMPORT: The function is named preprocess_video_for_inference
 from inference_preprocess import preprocess_video_for_inference
 
 logger = logging.getLogger(__name__)
 
+# The detrend function was moved here previously, which is correct.
 def detrend(signal, Lambda):
-    """Applies a detrending filter to a signal."""
     signal_length = signal.shape[0]
     H = np.identity(signal_length)
     ones = np.ones(signal_length)
@@ -396,7 +397,6 @@ def detrend(signal, Lambda):
     return filtered_signal
 
 def calculate_hr(pxx, f, fs=30):
-    """Calculates heart rate from PSD."""
     f_hr_min, f_hr_max = 0.75, 2.5
     valid_indices = np.where((f >= f_hr_min) & (f <= f_hr_max))[0]
     if len(valid_indices) == 0: return 0.0
@@ -404,55 +404,37 @@ def calculate_hr(pxx, f, fs=30):
     return f[valid_indices][peak_index] * 60.0
 
 def calculate_br(pxx, f, fs=30):
-    """Calculates breathing rate from PSD."""
     f_br_min, f_br_max = 0.17, 0.5
     valid_indices = np.where((f >= f_br_min) & (f <= f_br_max))[0]
     if len(valid_indices) == 0: return 0.0
     peak_index = np.argmax(pxx[valid_indices])
     return f[valid_indices][peak_index] * 60.0
 
-# --- PRE-LOAD THE MODEL: This is the robust method from your local files ---
-try:
-    model_path = "finetuned_full_dataset_v3.hdf5"
-    img_rows, img_cols, frame_depth = 36, 36, 10
-    logger.info("Initializing model architecture...")
-    model = MTTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
-    logger.info(f"Loading model weights from: {model_path}")
-    model.load_weights(model_path)
-    logger.info("Model and weights loaded successfully.")
-except Exception as e:
-    logger.error(f"FATAL: Could not load model. Error: {e}")
-    model = None
-
-def predict_vitals(video_path, fs=30, batch_size=32):
-    if model is None:
-        raise RuntimeError("Model is not loaded and is unavailable.")
-
-    img_rows, img_cols, frame_depth = 36, 36, 10
+def predict_vitals(video_path, model_weights="finetuned_full_dataset_v3.hdf5", fs=30, batch_size=100):
+    # ====================================================================================
+    # MODIFICATION: Changed frame_depth from 10 to 32 to match the training configuration
+    # ====================================================================================
+    img_rows, img_cols, frame_depth = 36, 36, 32
 
     logger.info(f"Preprocessing video: {video_path}")
-    full_processed_video = preprocess_video_for_inference(video_path, target_size=(img_rows, img_cols))
+    # The preprocessor correctly returns a single 6-channel tensor
+    final_input = preprocess_video_for_inference(video_path, target_size=(img_rows, img_cols))
 
-    # --- RESTORING YOUR ORIGINAL, CORRECT DATA SHAPING LOGIC ---
-    # 1. Truncate the video to be a perfect multiple of the model's frame_depth (10)
-    num_frames = full_processed_video.shape[0]
-    num_batches = num_frames // frame_depth
-    if num_batches == 0:
-        raise ValueError(f"Video is too short ({num_frames} frames). Needs at least {frame_depth} frames.")
-    
-    truncated_length = num_batches * frame_depth
-    truncated_video = full_processed_video[:truncated_length]
+    if final_input.shape[0] < frame_depth:
+        raise ValueError("Video too short for processing.")
 
-    # 2. Split into the two separate inputs that the model expects
-    motion_input = truncated_video[:, :, :, :3]
-    appearance_input = truncated_video[:, :, :, -3:]
+    logger.info(f"Loading model weights: {model_weights}")
+    # =================================================================================================
+    # MODIFICATION: Passed the corrected frame_depth to the model constructor
+    # =================================================================================================
+    model = MTTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
+    model.load_weights(model_weights)
 
     logger.info("Running model prediction...")
-    # The model's internal TSM layer handles reshaping, so we feed it the flat sequence
-    yptest = model.predict((motion_input, appearance_input), batch_size=batch_size, verbose=0)
+    # The model's 'call' method will handle the splitting of the 6-channel input internally.
+    yptest = model.predict(final_input, batch_size=batch_size, verbose=0)
     
-    # Reshape the chunked predictions back into a single continuous signal
-    pulse_pred_raw = yptest[0].reshape(-1)
+    pulse_pred_raw = yptest[0]
     
     logger.info("Post-processing signal...")
     pulse_pred = detrend(np.cumsum(pulse_pred_raw), 100)
