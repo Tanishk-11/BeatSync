@@ -12,8 +12,33 @@ dotenv.config();
 const app = express();
 
 // --- Middleware ---
-// Enable Cross-Origin Resource Sharing (CORS) so the frontend can communicate with this gateway
-app.use(cors());
+
+// ====================================================================================
+// THE FIX: Replace the simple cors() setup with a specific configuration
+// that explicitly allows your deployed frontend to make requests.
+// ====================================================================================
+const allowedOrigins = ['https://beatsync-frontend.onrender.com', 'http://localhost:5173'];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+};
+
+app.use(cors(corsOptions));
+// This ensures that browser preflight requests (OPTIONS) are handled correctly.
+app.options('*', cors(corsOptions));
+// ====================================================================================
+
+
 // Enable the Express app to parse JSON formatted request bodies
 app.use(express.json());
 
@@ -28,10 +53,8 @@ app.use("/api/chat", chatRoutes);
 
 // --- Health Check Route ---
 // A simple route to check if the API gateway is running.
-// You can visit this in your browser at http://localhost:3000/
 app.get("/", (req, res) => {
   res.send("BeatSync API Gateway is running ❤️");
 });
 
 export default app;
-
