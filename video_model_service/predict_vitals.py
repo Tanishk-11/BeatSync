@@ -378,17 +378,12 @@ from scipy.sparse import spdiags
 import tensorflow as tf
 import logging
 
-# Local imports from other files in this service
 from model import MTTS_CAN
-# CORRECTED IMPORT: Only import the function that actually exists in the file
 from inference_preprocess import preprocess_video_for_inference
 
-# Set up a logger
 logger = logging.getLogger(__name__)
 
-# --- THE 'detrend' FUNCTION IS NOW HERE, WHERE IT BELONGS ---
 def detrend(signal, Lambda):
-    """Applies a detrending filter to a signal."""
     signal_length = signal.shape[0]
     H = np.identity(signal_length)
     ones = np.ones(signal_length)
@@ -400,36 +395,29 @@ def detrend(signal, Lambda):
     return filtered_signal
 
 def calculate_hr(pxx, f, fs=30):
-    """Calculates the heart rate from the Power Spectral Density (PSD) of a signal."""
-    f_hr_min = 0.75   # 45 bpm
-    f_hr_max = 2.5    # 150 bpm
+    f_hr_min, f_hr_max = 0.75, 2.5
     valid_indices = np.where((f >= f_hr_min) & (f <= f_hr_max))[0]
-    if len(valid_indices) == 0:
-        return 0.0
+    if len(valid_indices) == 0: return 0.0
     peak_index = np.argmax(pxx[valid_indices])
     return f[valid_indices][peak_index] * 60.0
 
 def calculate_br(pxx, f, fs=30):
-    """Calculates the breathing rate from the Power Spectral Density (PSD) of a signal."""
-    f_br_min = 0.17   # ~10 breaths/min
-    f_br_max = 0.5    # 30 breaths/min
+    f_br_min, f_br_max = 0.17, 0.5
     valid_indices = np.where((f >= f_br_min) & (f <= f_br_max))[0]
-    if len(valid_indices) == 0:
-        return 0.0
+    if len(valid_indices) == 0: return 0.0
     peak_index = np.argmax(pxx[valid_indices])
     return f[valid_indices][peak_index] * 60.0
 
 def predict_vitals(video_path, model_weights="finetuned_full_dataset_v3.hdf5", fs=30, batch_size=100):
-    """Main function to predict vital signs from a video path."""
     img_rows, img_cols, frame_depth = 36, 36, 10
 
     logger.info(f"Preprocessing video: {video_path}")
     final_input = preprocess_video_for_inference(video_path, target_size=(img_rows, img_cols))
 
     if final_input.shape[0] < frame_depth:
-        raise ValueError("Video is too short or no faces were found for processing.")
+        raise ValueError("Video too short for processing.")
 
-    logger.info(f"Loading model weights from {model_weights}")
+    logger.info(f"Loading model weights: {model_weights}")
     model = MTTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
     model.load_weights(model_weights)
 
@@ -440,10 +428,10 @@ def predict_vitals(video_path, model_weights="finetuned_full_dataset_v3.hdf5", f
     
     pulse_pred_raw = yptest[0]
     
-    logger.info("Post-processing the predicted signal...")
+    logger.info("Post-processing signal...")
     pulse_pred = detrend(np.cumsum(pulse_pred_raw), 100)
     
-    [b, a] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
+    b, a = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_pred = filtfilt(b, a, pulse_pred.flatten())
     
     f, pxx = welch(pulse_pred, fs=fs, nperseg=256, nfft=2048)
@@ -453,7 +441,4 @@ def predict_vitals(video_path, model_weights="finetuned_full_dataset_v3.hdf5", f
     
     logger.info(f"Calculated Vitals - BPM: {bpm:.2f}, Breaths/min: {breaths_per_min:.2f}")
 
-    return {
-        "heart_rate": round(bpm, 2),
-        "breathing_rate": round(breaths_per_min, 2)
-    }
+    return {"heart_rate": round(bpm, 2), "breathing_rate": round(breaths_per_min, 2)}

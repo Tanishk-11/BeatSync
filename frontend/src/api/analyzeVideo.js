@@ -59,36 +59,30 @@
 
 
 import axios from "axios";
-const API_URL = import.meta.env.VITE_API_URL;
-const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME; // <-- IMPORTANT: SET THIS
-const CLOUDINARY_API_KEY = import.meta.env.VITE_CLOUDINARY_API_KEY; // <-- IMPORTANT: SET THIS
+
+// This URL must point directly to your Hugging Face video service
+const VIDEO_API_URL = `${import.meta.env.VITE_VIDEO_SERVICE_URL}/predict/`;
 
 const analyzeVideo = async (videoBlob) => {
   try {
-    // --- Step 1: Get the secure signature from our API Gateway ---
-    const signatureResponse = await axios.get(`${API_URL}/api/video/get-upload-signature`);
-    const { timestamp, signature } = signatureResponse.data;
-
-    // --- Step 2: Upload the video directly to Cloudinary ---
     const formData = new FormData();
-    formData.append("file", videoBlob);
-    formData.append("api_key", CLOUDINARY_API_KEY);
-    formData.append("timestamp", timestamp);
-    formData.append("signature", signature);
-    // Optional: folder to keep things organized in Cloudinary
-    formData.append("folder", "beatsync_videos"); 
+    // The key 'video' must match what the Python backend expects
+    formData.append("video", videoBlob, "video.mp4");
 
-    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`;
-    const cloudinaryResponse = await axios.post(cloudinaryUrl, formData);
-    const videoUrl = cloudinaryResponse.data.secure_url; // The public URL of the uploaded video
+    console.log("Uploading video directly to:", VIDEO_API_URL);
 
-    // --- Step 3: Trigger the analysis on our backend ---
-    const analysisResponse = await axios.post(`${API_URL}/api/video/analyze`, { videoUrl });
-    
-    return analysisResponse.data;
+    const response = await axios.post(VIDEO_API_URL, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      // A long timeout is crucial for video analysis
+      timeout: 90000, 
+    });
+
+    return response.data;
 
   } catch (error) {
-    console.error("Error during video analysis pipeline:", error);
+    console.error("Error during direct video analysis:", error.response ? error.response.data : error.message);
     throw error;
   }
 };

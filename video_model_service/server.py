@@ -207,22 +207,19 @@
 
 # if __name__ == "__main__":
 #     uvicorn.run(app, host="0.0.0.0", port=8002) # This port is for local dev only
-
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, UploadFile, File, HTTPException
 import uvicorn
 import logging
-import requests
 import os
 from predict_vitals import predict_vitals
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# This is critical: It allows your frontend on Render to call this service
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -230,39 +227,25 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Pydantic model for the incoming request body
-class VideoRequest(BaseModel):
-    video_url: str
-
 @app.post("/predict/")
-async def predict(request: VideoRequest):
+async def predict(video: UploadFile = File(...)):
+    video_path = f"/tmp/{os.urandom(8).hex()}_{video.filename}"
     try:
-        # --- Download the video from the provided URL ---
-        video_url = request.video_url
-        logger.info(f"Downloading video from: {video_url}")
-
-        # Use a temporary file path
-        video_path = f"/tmp/video_to_process.mp4"
-
-        r = requests.get(video_url, stream=True)
-        r.raise_for_status()
-        with open(video_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
-
-        logger.info(f"Video saved to: {video_path}")
-
-        # --- Get predictions ---
+        with open(video_path, "wb") as buffer:
+            buffer.write(await video.read())
+        
+        logger.info(f"Processing video: {video_path}")
         predictions = predict_vitals(video_path)
-
-        # Clean up the downloaded file
-        os.remove(video_path)
-
         return predictions
-
+        
     except Exception as e:
         logger.exception(f"An error occurred during prediction: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # This ensures the video is always deleted after processing
+        if os.path.exists(video_path):
+            os.remove(video_path)
+            logger.info(f"Cleaned up temporary video file: {video_path}")
 
 @app.get("/")
 def read_root():

@@ -326,14 +326,13 @@ def preprocess_video_for_inference(video_path, target_size=(36, 36)):
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        raise ValueError(f"Error: Could not open video file: {video_path}")
+        raise ValueError(f"Error opening video: {video_path}")
 
     cropped_frames = []
     
     while cap.isOpened():
         ret, frame = cap.read()
-        if not ret:
-            break
+        if not ret: break
 
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = face_detection.process(rgb_frame)
@@ -342,12 +341,8 @@ def preprocess_video_for_inference(video_path, target_size=(36, 36)):
             detection = results.detections[0]
             bboxC = detection.location_data.relative_bounding_box
             ih, iw, _ = frame.shape
-            
-            x, y, w, h = int(bboxC.xmin * iw), int(bboxC.ymin * ih), \
-                         int(bboxC.width * iw), int(bboxC.height * ih)
-            
+            x, y, w, h = int(bboxC.xmin * iw), int(bboxC.ymin * ih), int(bboxC.width * iw), int(bboxC.height * ih)
             x, y, w, h = max(0, x), max(0, y), max(0, w), max(0, h)
-            
             face = frame[y:y+h, x:x+w]
             
             if face.size > 0:
@@ -358,16 +353,13 @@ def preprocess_video_for_inference(video_path, target_size=(36, 36)):
     face_detection.close()
 
     if not cropped_frames:
-        raise ValueError("Could not detect a face in any frame of the video.")
+        raise ValueError("No face detected in video.")
 
     Xsub = np.array(cropped_frames, dtype=np.float32)
-    
     Xsub = (Xsub - np.mean(Xsub)) / np.std(Xsub)
 
     dXsub = np.diff(Xsub, axis=0)
     dXsub = np.concatenate((dXsub, np.zeros((1, target_size[0], target_size[1], 3), dtype=np.float32)), axis=0)
     dXsub = (dXsub - np.mean(dXsub)) / np.std(dXsub)
 
-    final_input = np.concatenate((dXsub, Xsub), axis=3)
-    
-    return final_input
+    return np.concatenate((dXsub, Xsub), axis=3)
