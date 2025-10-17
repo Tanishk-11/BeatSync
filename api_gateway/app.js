@@ -14,32 +14,26 @@ const app = express();
 // --- Middleware ---
 
 // ====================================================================================
-// THE FIX: Replace the simple cors() setup with a specific configuration
-// that explicitly allows your deployed frontend to make requests.
+// THE FIX: A simpler, more direct, and production-standard CORS configuration.
+// Instead of a function, we provide a direct list of trusted websites.
 // ====================================================================================
-const allowedOrigins = ['https://beatsync-frontend.onrender.com', 'http://localhost:5173'];
-
 const corsOptions = {
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+  origin: [
+    'https://beatsync-frontend.onrender.com', // Your deployed frontend
+    'http://localhost:5173'                     // Your local development environment
+  ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 };
 
+// The cors middleware, with these options, will correctly handle all requests,
+// including the browser's preflight (OPTIONS) security checks.
 app.use(cors(corsOptions));
-// This ensures that browser preflight requests (OPTIONS) are handled correctly.
-app.options('*', cors(corsOptions));
 // ====================================================================================
 
 
-// Enable the Express app to parse JSON formatted request bodies
+// Enable the Express app to parse JSON formatted request bodies.
+// This must come AFTER the CORS middleware.
 app.use(express.json());
 
 
@@ -47,7 +41,7 @@ app.use(express.json());
 // Any request starting with /api/video will be handled by the videoRoutes router.
 app.use("/api/video", videoRoutes);
 
-// Any request starting with /api/chat will be handled by the chatRoutes router.
+// Any request starting with /api/preflight will be handled by the chatRoutes router.
 app.use("/api/chat", chatRoutes);
 
 
@@ -58,3 +52,4 @@ app.get("/", (req, res) => {
 });
 
 export default app;
+
