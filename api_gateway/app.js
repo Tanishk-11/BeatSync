@@ -17,13 +17,24 @@ const app = express();
 // THE FIX: A simpler, more direct, and production-standard CORS configuration.
 // Instead of a function, we provide a direct list of trusted websites.
 // ====================================================================================
+// const corsOptions = {
+//   origin: [
+//     'https://beatsync-vx53.onrender.com', // Your deployed frontend
+//     'http://localhost:5173'                     // Your local development environment
+//   ],
+//   methods: ['GET', 'POST'],
+//   allowedHeaders: ['Content-Type'],
+// };
+
 const corsOptions = {
   origin: [
-    'https://beatsync-vx53.onrender.com', // Your deployed frontend
-    'http://localhost:5173'                     // Your local development environment
+    "https://beatsync-vx53.onrender.com", // your frontend (Render)
+    "http://localhost:5173"               // local dev
   ],
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200 // <- ensures old browsers don't break on 204
 };
 
 // The cors middleware, with these options, will correctly handle all requests,
