@@ -1,20 +1,20 @@
-# Use an official Node.js image
+# Use a lightweight, official Node.js image
 FROM node:18-alpine
 
-# Set the working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package files
+# Copy package.json and package-lock.json first to leverage Docker's layer cache
 COPY package*.json ./
 
-# Install only production dependencies for a smaller image size
+# Install only the production dependencies to keep the image small
 RUN npm install --only=production
 
-# Copy the rest of the application code
+# Copy the rest of your application's source code
 COPY . .
 
-# The gateway will run on port 3000
+# Expose port 3000 to the outside world
 EXPOSE 3000
 
-# The command to start the server
+# The command to start the application when the container launches
 CMD ["node", "server.js"]
