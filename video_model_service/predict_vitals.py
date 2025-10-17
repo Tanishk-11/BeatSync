@@ -379,10 +379,12 @@ import tensorflow as tf
 import logging
 
 from model import MTTS_CAN
+# CORRECTED IMPORT: The function is named preprocess_video_for_inference
 from inference_preprocess import preprocess_video_for_inference
 
 logger = logging.getLogger(__name__)
 
+# The detrend function was moved here previously, which is correct.
 def detrend(signal, Lambda):
     signal_length = signal.shape[0]
     H = np.identity(signal_length)
@@ -412,6 +414,7 @@ def predict_vitals(video_path, model_weights="finetuned_full_dataset_v3.hdf5", f
     img_rows, img_cols, frame_depth = 36, 36, 10
 
     logger.info(f"Preprocessing video: {video_path}")
+    # The preprocessor correctly returns a single 6-channel tensor
     final_input = preprocess_video_for_inference(video_path, target_size=(img_rows, img_cols))
 
     if final_input.shape[0] < frame_depth:
@@ -422,9 +425,10 @@ def predict_vitals(video_path, model_weights="finetuned_full_dataset_v3.hdf5", f
     model.load_weights(model_weights)
 
     logger.info("Running model prediction...")
-    motion_stream = final_input[:, :, :, :3]
-    appearance_stream = final_input[:, :, :, -3:]
-    yptest = model.predict((motion_stream, appearance_stream), batch_size=batch_size, verbose=0)
+    # --- THIS IS THE FIX ---
+    # We now pass the single 6-channel tensor directly to the model.
+    # The model's 'call' method will handle the splitting internally.
+    yptest = model.predict(final_input, batch_size=batch_size, verbose=0)
     
     pulse_pred_raw = yptest[0]
     
