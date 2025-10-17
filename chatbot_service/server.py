@@ -1,76 +1,56 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import uvicorn
-import logging
-from fastapi.middleware.cors import CORSMiddleware # 1. ADD THIS IMPORT
-
-# Local import from your RAG logic file
 from BeatSync import ask_question
+from fastapi.middleware.cors import CORSMiddleware  # <-- IMPORT THIS
 
-# --- Basic Configuration ---
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+app = FastAPI()
 
-app = FastAPI(
-    title="BeatSync RAG Chatbot Service",
-    description="A dedicated API to interact with the Groq-powered RAG model.",
-    version="1.0.0"
-)
+# ====================================================================================
+# FIX: Add CORS middleware to allow requests from your frontend.
+# This block tells your Hugging Face server to accept API calls
+# from your Render frontend.
+# ====================================================================================
+origins = [
+    "https://beatsync-vx53.onrender.com",  # Your deployed frontend
+    "http://localhost:5173",         # For local development
+]
 
-# 2. ADD THIS ENTIRE BLOCK
-# This allows your API Gateway on Render to communicate with this service.
-# --------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows all origins
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # Allows all methods
-    allow_headers=["*"], # Allows all headers
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
+# ====================================================================================
 
-# --- Pydantic Models for Request/Response ---
-# This ensures the data sent to and from the API is in the correct format.
+
 class ChatRequest(BaseModel):
-    message: str
+    question: str
+    history: list = []
+
 
 class ChatResponse(BaseModel):
-    response: str
+    answer: str
 
-# --- API Endpoint Definition ---
-@app.post("/chat/", response_model=ChatResponse)
-async def handle_chat_message(request: ChatRequest):
-    """
-    This endpoint receives a user's message, passes it to the RAG chain,
-    and returns the generated response.
-    """
-    try:
-        logger.info(f"Received question: '{request.message}'")
-        
-        # Call the core RAG logic from BeatSync.py
-        answer = ask_question(request.message)
-        
-        logger.info(f"Generated response: '{answer}'")
-        
-        return ChatResponse(response=answer)
-        
-    except Exception as e:
-        # Catch any unexpected errors from the LangChain or Groq API calls
-        logger.exception(f"An unexpected error occurred: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="An internal server error occurred while processing the chat message."
-        )
 
-# --- Health Check Endpoint ---
 @app.get("/")
 def read_root():
-    """A simple health check endpoint to confirm the service is running."""
-    return {"status": "Chatbot Service is running"}
+    return {"message": "BeatSync Chatbot is running"}
 
-# --- To run this server locally for testing ---
-# Use the command: uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8001))
-    uvicorn.run(app, host="0.0.0.0", port=port)
 
+@app.post("/", response_model=ChatResponse)
+def get_chat_response(request: ChatRequest):
+    """
+    Handles a user's chat message, processes it with the RAG chain,
+    and returns the model's response.
+    """
+    try:
+        # Pass the question and the history to the stateless RAG chain function
+        answer = ask_question(question=request.question, history=request.history)
+        return ChatResponse(answer=answer)
+    except Exception as e:
+        # Log the exception for debugging
+        print(f"An error occurred: {e}")
+        # Return a user-friendly error message
+        raise HTTPException(status_code=500, detail="An internal error occurred in the chatbot.")
