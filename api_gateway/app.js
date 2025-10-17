@@ -19,7 +19,7 @@ const app = express();
 // ====================================================================================
 const corsOptions = {
   origin: [
-    'https://beatsync-frontend.onrender.com', // Your deployed frontend
+    'https://beatsync-vx53.onrender.com', // Your deployed frontend
     'http://localhost:5173'                     // Your local development environment
   ],
   methods: ['GET', 'POST'],
