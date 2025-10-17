@@ -10,28 +10,32 @@ export const handleChat = async (req, res) => {
     }
 
     // 2. Get the URL of the Python chatbot service from environment variables.
-    //    This makes the code flexible for development and production environments.
     const chatbotServiceUrl = process.env.CHATBOT_SERVICE_URL;
     if (!chatbotServiceUrl) {
-      throw new Error("CHATBOT_SERVICE_URL is not defined in the .env file.");
+      console.error("CHATBOT_SERVICE_URL is not defined in the .env file.");
+      return res.status(500).json({ error: "Chatbot service is not configured on the server." });
     }
 
     // 3. Forward the message to the Python chatbot service.
-    //    We use axios to make a POST request. The Python service expects a JSON
-    //    object with a "message" key.
-    const response = await axios.post(`${chatbotServiceUrl}/chat`, {
-      message: message,
+    // ====================================================================================
+    // FIX 1: The Python server expects the endpoint at the root "/", not "/chat".
+    // FIX 2: The Python server expects the JSON key to be "query", not "message".
+    // ====================================================================================
+    const response = await axios.post(chatbotServiceUrl, { // REMOVED '/chat'
+      query: message, // CHANGED key from 'message' to 'query'
     });
 
     // 4. Send the response from the Python service back to the frontend.
-    //    The Python service returns a JSON object like { "response": "..." }.
     res.status(200).json(response.data);
 
   } catch (error) {
-    // 5. If anything goes wrong (e.g., the Python service is down),
-    //    log the error and send a 500 Internal Server Error response to the frontend.
+    // 5. Improved error handling to provide more detail in the logs.
     console.error("Error calling chatbot service:", error.message);
+    if (error.response) {
+      // If the chatbot service itself returned an error (e.g., 4xx, 5xx)
+      console.error("Chatbot service error status:", error.response.status);
+      console.error("Chatbot service error data:", error.response.data);
+    }
     res.status(500).json({ error: "Failed to communicate with the chatbot service." });
   }
 };
-
