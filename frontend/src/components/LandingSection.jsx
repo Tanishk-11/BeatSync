@@ -6,7 +6,7 @@ export default function LandingSection() {
   const navigate = useNavigate();
 
   return (
-    <section className="h-screen flex flex-col justify-center items-center text-center px-4">
+    <section id="landing-section" className="h-screen flex flex-col justify-center items-center text-center px-4">
       {/* Logo */}
       <img
         src={logo}

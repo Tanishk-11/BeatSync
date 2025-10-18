@@ -3,13 +3,13 @@ import image from "../assets/photo2.jpeg"; // replace with your image file
 export default function AboutSection() {
   return (
     <section
-      id="about-deepsync"
+      id="about-beatsync"
       className="h-screen flex flex-col md:flex-row items-center justify-center px-8 md:px-20 text-left"
     >
       {/* Left Content */}
       <div className="md:w-1/2 space-y-6 animate-slideUp">
         <h2 className="text-4xl md:text-5xl font-extrabold text-red-600">
-          About Deepsync
+          About Beatsync
         </h2>
         <p className="text-gray-800 text-lg leading-relaxed">
           <span className="font-semibold text-red-500">BeatSync AI</span> is a
