@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import Timer from "./Timer.jsx";
 import Button from "./Button.jsx";
-import ModelOutput from "./ModelOutput.jsx"; // To display the output directly
 import analyzeVideo from "../api/analyzeVideo.js";
 
 // This prop is passed down from Analyzer.jsx
@@ -29,21 +28,16 @@ export default function VideoRecorder({ setModelOutputInParent }) {
       const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
       mediaRecorderRef.current = recorder;
 
-      // When data is available, add it to our chunks array
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           recordedChunksRef.current.push(event.data);
         }
       };
 
-      // This is the most important part:
-      // When the recorder stops, assemble the blob and immediately upload it.
       recorder.onstop = async () => {
         setStatus("processing");
         const videoBlob = new Blob(recordedChunksRef.current, { type: "video/webm" });
 
-        // --- DIRECT UPLOAD ---
-        // No more waiting for useEffect. We call the analysis function right here.
         try {
           const output = await analyzeVideo(videoBlob);
           setLocalModelOutput(output);
@@ -55,7 +49,6 @@ export default function VideoRecorder({ setModelOutputInParent }) {
           setStatus("error");
         }
 
-        // Clean up the camera stream
         stream.getTracks().forEach((track) => track.stop());
         videoRef.current.srcObject = null;
       };
@@ -69,8 +62,6 @@ export default function VideoRecorder({ setModelOutputInParent }) {
   };
 
   const handleTimerComplete = () => {
-    // When the timer finishes, just stop the recorder.
-    // The 'onstop' event handler will take care of the rest.
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
     }
@@ -97,7 +88,8 @@ export default function VideoRecorder({ setModelOutputInParent }) {
       <div className="w-full h-96 bg-black mb-4 rounded-lg overflow-hidden">
         <video
           ref={videoRef}
-          className="w-full h-full object-cover"
+          // --- THIS IS THE ONLY CHANGE ---
+          className="w-full h-full object-cover -scale-x-100"
           autoPlay
           muted
         />
@@ -115,7 +107,6 @@ export default function VideoRecorder({ setModelOutputInParent }) {
       
       <Timer start={status === "recording"} onComplete={handleTimerComplete} />
 
-      {/* Display the final output here */}
       {status === 'completed' && localModelOutput && (
         <div className="mt-6 p-4 border rounded-lg bg-gray-50 w-full">
             <h3 className="text-xl font-bold mb-2 text-gray-700">Analysis Result</h3>
@@ -126,3 +117,4 @@ export default function VideoRecorder({ setModelOutputInParent }) {
     </div>
   );
 }
+
